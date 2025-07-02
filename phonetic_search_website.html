@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>近音词搜索 - Phonetic Word Finder</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            padding: 40px 30px;
+            text-align: center;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .search-section {
+            padding: 40px 30px;
+            background: #f8f9ff;
+        }
+
+        .search-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .search-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 15px 20px;
+            border: 2px solid #e0e7ff;
+            border-radius: 15px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 20px rgba(79, 172, 254, 0.2);
+        }
+
+        .search-btn {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 120px;
+        }
+
+        .search-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(79, 172, 254, 0.4);
+        }
+
+        .search-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .result-section {
+            padding: 0 30px 40px;
+        }
+
+        .phonetic-info {
+            background: #fff;
+            border: 2px solid #e0e7ff;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            display: none;
+        }
+
+        .phonetic-info h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+        }
+
+        .phonetic-transcription {
+            background: #f0f4ff;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .phonetic-transcription li {
+            list-style: none;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .bold {
+            font-weight: bold;
+            color: #4facfe;
+        }
+
+        .syllables {
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            border-left: 4px solid #4facfe;
+        }
+
+        .similar-words {
+            display: none;
+        }
+
+        .similar-words h4 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.2em;
+        }
+
+        .word-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .word-item {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 18px;
+            border-radius: 25px;
+            text-decoration: none;
+            text-align: center;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .word-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+            text-decoration: none;
+            color: white;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            display: none;
+        }
+
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4facfe;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+            border-left: 4px solid #c33;
+        }
+
+        .example-searches {
+            background: #f0f4ff;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+
+        .example-searches h4 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .example-tags {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .example-tag {
+            background: white;
+            color: #4facfe;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid #4facfe;
+        }
+
+        .example-tag:hover {
+            background: #4facfe;
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .search-container {
+                flex-direction: column;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .word-grid {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 近音词搜索</h1>
+            <p>Phonetic Word Finder - 发现发音相似的英语单词</p>
+        </div>
+
+        <div class="search-section">
+            <div class="example-searches">
+                <h4>🚀 试试这些示例：</h4>
+                <div class="example-tags">
+                    <span class="example-tag" onclick="searchExample('cognitive')">cognitive</span>
+                    <span class="example-tag" onclick="searchExample('conductive')">conductive</span>
+                    <span class="example-tag" onclick="searchExample('productive')">productive</span>
+                    <span class="example-tag" onclick="searchExample('creative')">creative</span>
+                    <span class="example-tag" onclick="searchExample('support')">support</span>
+                </div>
+            </div>
+
+            <div class="search-container">
+                <input type="text" class="search-input" id="searchInput" placeholder="输入英语单词..." />
+                <button class="search-btn" onclick="searchSimilarWords()">搜索近音词</button>
+            </div>
+
+            <div class="error-message" id="errorMessage"></div>
+        </div>
+
+        <div class="result-section">
+            <div class="loading" id="loading">
+                <div class="loading-spinner"></div>
+                <p>正在搜索近音词...</p>
+            </div>
+
+            <div class="phonetic-info" id="phoneticInfo">
+                <h3>📝 音标信息</h3>
+                <ul class="phonetic-transcription" id="phoneticTranscription">
+                </ul>
+            </div>
+
+            <div class="similar-words" id="similarWords">
+                <h4>🎯 发音相似的单词：</h4>
+                <div class="word-grid" id="wordGrid"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 预定义的音标数据库（扩展版）
+        const phoneticDatabase = {
+            'cognitive': {
+                modern: 'ˈkɒɡnɪtɪv',
+                traditional: 'ˈkɒɡnɪtɪv',
+                syllables: ['COG', 'ni', 'tive'],
+                similar: ['connective', 'collective', 'corrective', 'protective', 'selective', 'detective', 'objective', 'subjective', 'effective', 'directive']
+            },
+            'conductive': {
+                modern: 'kənˈdʌktɪv',
+                traditional: 'kənˈdʌktɪv',
+                syllables: ['con', 'DUC', 'tive'],
+                similar: ['productive', 'destructive', 'constructive', 'instructive', 'reductive', 'inductive', 'deductive', 'seductive', 'reproductive', 'counterproductive']
+            },
+            'productive': {
+                modern: 'prəˈdʌktɪv',
+                traditional: 'prəˈdʌktɪv',
+                syllables: ['pro', 'DUC', 'tive'],
+                similar: ['conductive', 'destructive', 'constructive', 'instructive', 'reductive', 'reproductive', 'counterproductive', 'unproductive']
+            },
+            'creative': {
+                modern: 'kriˈeɪtɪv',
+                traditional: 'kriˈeɪtɪv',
+                syllables: ['cre', 'A', 'tive'],
+                similar: ['innovative', 'initiative', 'decorative', 'comparative', 'narrative', 'operative', 'cooperative', 'collaborative', 'administrative', 'representative']
+            },
+            'effective': {
+                modern: 'ɪˈfektɪv',
+                traditional: 'ɪˈfektɪv',
+                syllables: ['ef', 'FEC', 'tive'],
+                similar: ['selective', 'collective', 'protective', 'objective', 'subjective', 'detective', 'corrective', 'directive', 'reflective', 'perspective']
+            },
+            'organization': {
+                modern: 'ˌɔːɡənaɪˈzeɪʃən',
+                traditional: 'ˌɔːɡənaɪˈzeɪʃən',
+                syllables: ['OR', 'ga', 'ni', 'ZA', 'tion'],
+                similar: ['organisation', 'organizations', 'organisations', 'organizational', 'reorganization', 'americanization', 'disorganization', 'ionization', 'organism', 'organizer', 'organizing', 'modernization', 'standardization', 'characterization', 'crystallization']
+            },
+            'support': {
+                modern: 'səˈpɔːt',
+                traditional: 'səˈpɔːt',
+                syllables: ['suh', 'PORT'],
+                similar: ['report', 'import', 'export', 'transport', 'deport', 'comfort', 'effort', 'sport', 'court', 'fort', 'sort', 'short', 'abort', 'distort', 'resort', 'consort', 'escort', 'supports', 'supporting', 'supported', 'supportive']
+            }
+        };
+
+        // 扩展的词汇库用于匹配
+        const extendedVocabulary = [
+            // support 相关
+            'support', 'supports', 'supporting', 'supported', 'supportive', 'unsupported',
+            'report', 'reports', 'reporting', 'reported', 'reporter', 'import', 'imports',
+            'export', 'exports', 'transport', 'transports', 'deport', 'comfort', 'effort',
+            'sport', 'sports', 'port', 'ports', 'court', 'courts', 'fort', 'forts',
+            'sort', 'sorts', 'short', 'abort', 'distort', 'resort', 'consort', 'escort',
+            
+            // organization 相关
+            'organization', 'organisation', 'organizations', 'organisations', 
+            'organizational', 'reorganization', 'disorganization', 'organism',
+            'organizer', 'organizing', 'organized', 'organic', 'organically',
+            
+            // -ation 结尾的词
+            'nation', 'station', 'creation', 'education', 'information', 'formation', 
+            'operation', 'population', 'preparation', 'presentation', 'communication', 
+            'transportation', 'investigation', 'administration', 'registration', 
+            'demonstration', 'recommendation', 'concentration', 'celebration', 'vacation',
+            'relation', 'situation', 'location', 'invitation', 'motivation', 'inspiration',
+            'americanization', 'modernization', 'standardization', 'characterization',
+            'crystallization', 'ionization', 'civilization', 'realization', 'localization',
+            'optimization', 'maximization', 'minimization', 'specialization', 'globalization',
+            'privatization', 'digitization', 'urbanization', 'democratization', 'decentralization',
+            
+            // -tion 结尾的词
+            'action', 'section', 'function', 'production', 'protection', 'construction',
+            'destruction', 'instruction', 'attraction', 'reaction', 'interaction', 'transaction',
+            'fraction', 'fiction', 'distinction', 'extinction', 'prediction', 'addiction',
+            
+            // -ive 结尾的词
+            'active', 'passive', 'massive', 'native', 'creative', 'innovative', 'productive', 
+            'effective', 'selective', 'collective', 'protective', 'objective', 'subjective', 
+            'detective', 'corrective', 'directive', 'reflective', 'perspective', 'constructive',
+            'destructive', 'instructive', 'conductive', 'reproductive', 'competitive',
+            'alternative', 'relative', 'negative', 'positive', 'sensitive', 'expensive',
+            'extensive', 'intensive', 'comprehensive', 'progressive', 'aggressive', 'impressive',
+            'cognitive', 'decorative', 'comparative', 'narrative', 'operative', 'cooperative', 
+            'collaborative', 'administrative', 'representative',
+            
+            // 常见单词
+            'important', 'different', 'available', 'possible', 'necessary', 'interesting',
+            'difficult', 'beautiful', 'wonderful', 'successful', 'powerful', 'peaceful',
+            'careful', 'helpful', 'useful', 'harmful', 'painful', 'grateful', 'faithful',
+            'doubtful', 'hopeful', 'cheerful', 'respectful', 'forgetful', 'delightful',
+            
+            // 动词过去式和现在分词
+            'started', 'finished', 'worked', 'played', 'studied', 'visited', 'decided',
+            'provided', 'included', 'considered', 'developed', 'happened', 'changed',
+            'starting', 'finishing', 'working', 'playing', 'studying', 'visiting',
+            'deciding', 'providing', 'including', 'considering', 'developing', 'happening',
+            
+            // 其他常见词汇
+            'computer', 'internet', 'website', 'software', 'hardware', 'database',
+            'network', 'system', 'program', 'project', 'product', 'service', 'business',
+            'company', 'industry', 'technology', 'science', 'research', 'development',
+            'management', 'marketing', 'advertising', 'customer', 'market', 'economy'
+        ];
+
+        // 搜索相似发音的单词 - 集成多个API
+        async function searchSimilarWords() {
+            const searchInput = document.getElementById('searchInput');
+            const word = searchInput.value.trim().toLowerCase();
+            
+            if (!word) {
+                showError('请输入一个英语单词');
+                return;
+            }
+
+            // 更新URL
+            updateUrl(word);
+
+            showLoading(true);
+            hideError();
+
+            try {
+                // 首先检查本地数据库
+                if (phoneticDatabase[word]) {
+                    displayResults(word, phoneticDatabase[word]);
+                } else {
+                    // 使用多个免费API搜索
+                    await searchFromMultipleAPIs(word);
+                }
+            } catch (error) {
+                showError('搜索过程中出现错误，请稍后重试');
+                console.error('Search error:', error);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // 使用多个API搜索
+        async function searchFromMultipleAPIs(word) {
+            try {
+                const [dictionaryData, rhymeWords, similarSoundWords, synonyms] = await Promise.allSettled([
+                    fetchDictionaryData(word),
+                    fetchRhymingWords(word),
+                    fetchSimilarSoundingWords(word),
+                    fetchSynonyms(word)
+                ]);
+
+                // 收集所有相似词
+                const allSimilarWords = [];
+                
+                if (rhymeWords.status === 'fulfilled') {
+                    allSimilarWords.push(...rhymeWords.value);
+                }
+                if (similarSoundWords.status === 'fulfilled') {
+                    allSimilarWords.push(...similarSoundWords.value);
+                }
+                if (synonyms.status === 'fulfilled') {
+                    allSimilarWords.push(...synonyms.value);
+                }
+
+                // 如果API返回的词不够，补充本地算法生成的词
+                if (allSimilarWords.length < 10) {
+                    const localWords = generateSimilarWords(word);
+                    allSimilarWords.push(...localWords);
+                }
+
+                // 获取音标信息
+                let phonetic = null;
+                let syllables = null;
+                
+                if (dictionaryData.status === 'fulfilled' && dictionaryData.value) {
+                    phonetic = dictionaryData.value.phonetic;
+                    syllables = dictionaryData.value.syllables;
+                }
+
+                // 创建结果数据
+                const phoneticData = {
+                    modern: phonetic || generatePhonetic(word),
+                    traditional: phonetic || generatePhonetic(word),
+                    syllables: syllables || generateSyllables(word),
+                    similar: [...new Set(allSimilarWords)].filter(w => w !== word).slice(0, 20)
+                };
+
+                displayResults(word, phoneticData);
+
+            } catch (error) {
+                console.log('All APIs failed, using fallback:', error);
+                // 完全回退到本地算法
+                await searchFromAPI(word);
+            }
+        }
+
+        // 模拟API搜索 - 使用真实的免费API
+        async function searchFromAPI(word) {
+            try {
+                // 使用Free Dictionary API获取基本信息
+                const dictionaryData = await fetchDictionaryData(word);
+                
+                // 使用WordsAPI获取相关词汇
+                const similarWords = await fetchSimilarWords(word);
+                
+                // 生成词汇数据
+                const phoneticData = {
+                    modern: dictionaryData.phonetic || generatePhonetic(word),
+                    traditional: dictionaryData.phonetic || generatePhonetic(word),
+                    syllables: dictionaryData.syllables || generateSyllables(word),
+                    similar: similarWords.length > 0 ? similarWords : generateSimilarWords(word)
+                };
+
+                displayResults(word, phoneticData);
+            } catch (error) {
+                console.log('API search failed, using fallback algorithm:', error);
+                // 如果API失败，回退到原有算法
+                const similarWords = generateSimilarWords(word);
+                const phoneticData = {
+                    modern: generatePhonetic(word),
+                    traditional: generatePhonetic(word),
+                    syllables: generateSyllables(word),
+                    similar: similarWords
+                };
+                displayResults(word, phoneticData);
+            }
+        }
+
+        // 获取词典数据
+        async function fetchDictionaryData(word) {
+            try {
+                const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
+                if (!response.ok) throw new Error('Dictionary API failed');
+                
+                const data = await response.json();
+                if (data && data.length > 0) {
+                    const entry = data[0];
+                    return {
+                        phonetic: entry.phonetic || (entry.phonetics && entry.phonetics[0] && entry.phonetics[0].text) || null,
+                        syllables: extractSyllables(entry.phonetic || entry.word)
+                    };
+                }
+            } catch (error) {
+                console.log('Dictionary API error:', error);
+                return { phonetic: null, syllables: null };
+            }
+        }
+
+        // 获取相似词汇
+        async function fetchSimilarWords(word) {
+            const similarWords = [];
+            
+            try {
+                // 方法1: 使用WordsAPI (需要API key，这里用备用方案)
+                // const wordsApiData = await fetchWordsAPI(word);
+                // similarWords.push(...wordsApiData);
+                
+                // 方法2: 基于Datamuse API获取相似发音的词
+                const rhymeData = await fetchRhymingWords(word);
+                similarWords.push(...rhymeData);
+                
+                // 方法3: 基于字典API的同义词
+                const synonymData = await fetchSynonyms(word);
+                similarWords.push(...synonymData);
+                
+            } catch (error) {
+                console.log('Similar words API error:', error);
+            }
+            
+            // 去重并限制数量
+            return [...new Set(similarWords)].slice(0, 20);
+        }
+
+        // 获取押韵词
+        async function fetchRhymingWords(word) {
+            try {
+                const response = await fetch(`https://api.datamuse.com/words?rel_rhy=${word}&max=10`);
+                if (!response.ok) throw new Error('Rhyme API failed');
+                
+                const data = await response.json();
+                return data.map(item => item.word);
+            } catch (error) {
+                console.log('Rhyme API error:', error);
+                return [];
+            }
+        }
+
+        // 获取发音相似的词
+        async function fetchSimilarSoundingWords(word) {
+            try {
+                const response = await fetch(`https://api.datamuse.com/words?sl=${word}&max=15`);
+                if (!response.ok) throw new Error('Similar sound API failed');
+                
+                const data = await response.json();
+                return data.map(item => item.word);
+            } catch (error) {
+                console.log('Similar sound API error:', error);
+                return [];
+            }
+        }
+
+        // 获取同义词
+        async function fetchSynonyms(word) {
+            try {
+                // 使用免费的词典API获取同义词
+                const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
+                if (!response.ok) throw new Error('Synonym API failed');
+                
+                const data = await response.json();
+                const synonyms = [];
+                
+                if (data && data.length > 0) {
+                    data[0].meanings?.forEach(meaning => {
+                        meaning.definitions?.forEach(definition => {
+                            if (definition.synonyms) {
+                                synonyms.push(...definition.synonyms);
+                            }
+                        });
+                    });
+                }
+                
+                return synonyms.slice(0, 10);
+            } catch (error) {
+                console.log('Synonym API error:', error);
+                return [];
+            }
+        }
+
+        // 从音标提取音节
+        function extractSyllables(phonetic) {
+            if (!phonetic) return null;
+            
+            // 简单的音节分割（基于重音符号）
+            const syllables = phonetic.split(/[ˈˌ]/).filter(s => s.length > 0);
+            return syllables.length > 0 ? syllables : null;
+        }
+
+        // 生成音标（简化逻辑）
+        function generatePhonetic(word) {
+            const vowelMap = {
+                'a': 'æ', 'e': 'ɛ', 'i': 'ɪ', 'o': 'ɒ', 'u': 'ʌ'
+            };
+            
+            let phonetic = '';
+            for (let char of word) {
+                if (vowelMap[char]) {
+                    phonetic += vowelMap[char];
+                } else {
+                    phonetic += char;
+                }
+            }
+            return phonetic;
+        }
+
+        // 生成音节
+        function generateSyllables(word) {
+            const syllables = [];
+            let currentSyllable = '';
+            
+            for (let i = 0; i < word.length; i++) {
+                currentSyllable += word[i];
+                if (isVowel(word[i]) && i < word.length - 1 && !isVowel(word[i + 1])) {
+                    syllables.push(currentSyllable.toUpperCase());
+                    currentSyllable = '';
+                }
+            }
+            
+            if (currentSyllable) {
+                syllables.push(currentSyllable.toLowerCase());
+            }
+            
+            return syllables.length > 0 ? syllables : [word.toUpperCase()];
+        }
+
+        function isVowel(char) {
+            return 'aeiou'.includes(char.toLowerCase());
+        }
+
+        // 生成相似单词 - 改进的算法
+        function generateSimilarWords(word) {
+            const similar = [];
+            
+            // 1. 直接变形（复数、过去式等）
+            const directVariations = generateDirectVariations(word);
+            similar.push(...directVariations);
+            
+            // 2. 基于音韵模式匹配
+            const phoneticMatches = findPhoneticMatches(word);
+            similar.push(...phoneticMatches);
+            
+            // 3. 词根相同的词
+            const rootMatches = findRootMatches(word);
+            similar.push(...rootMatches);
+            
+            // 4. 音节结构相似的词
+            const syllableMatches = findSyllableMatches(word);
+            similar.push(...syllableMatches);
+            
+            // 去重并限制数量
+            const uniqueSimilar = [...new Set(similar)].filter(w => w !== word);
+            
+            // 按相似度排序
+            return uniqueSimilar
+                .map(w => ({ word: w, similarity: calculatePhoneticSimilarity(word, w) }))
+                .sort((a, b) => b.similarity - a.similarity)
+                .slice(0, 20)
+                .map(item => item.word);
+        }
+        
+        // 生成直接变形
+        function generateDirectVariations(word) {
+            const variations = [];
+            
+            // 英美拼写差异
+            if (word.includes('ization')) {
+                variations.push(word.replace('ization', 'isation'));
+            }
+            if (word.includes('isation')) {
+                variations.push(word.replace('isation', 'ization'));
+            }
+            
+            // 复数形式
+            if (word.endsWith('tion')) {
+                variations.push(word + 's');
+            }
+            if (word.endsWith('ion')) {
+                variations.push(word + 's');
+            }
+            
+            // 形容词形式
+            if (word.endsWith('tion')) {
+                const base = word.slice(0, -4);
+                variations.push(base + 'tional');
+            }
+            if (word.endsWith('ization')) {
+                const base = word.slice(0, -8);
+                variations.push(base + 'ize');
+                variations.push(base + 'izing');
+                variations.push(base + 'ized');
+            }
+            
+            // 词根变化
+            if (word.startsWith('re')) {
+                variations.push(word.slice(2)); // 去掉 re- 前缀
+                variations.push('dis' + word.slice(2)); // dis- 前缀
+                variations.push('un' + word.slice(2)); // un- 前缀
+            }
+            
+            return variations.filter(v => v.length > 2);
+        }
+        
+        // 基于音韵模式匹配
+        function findPhoneticMatches(word) {
+            const matches = [];
+            
+            // 相同结尾的词
+            const endings = ['-ation', '-tion', '-sion', '-ization', '-isation', '-ism', '-ist', '-ity', '-ive', '-ous'];
+            
+            endings.forEach(ending => {
+                const suffix = ending.slice(1); // 去掉 -
+                if (word.endsWith(suffix)) {
+                    const stem = word.slice(0, -suffix.length);
+                    
+                    // 查找其他以相同词根开头的词
+                    extendedVocabulary.forEach(vocabWord => {
+                        if (vocabWord.startsWith(stem) && vocabWord !== word) {
+                            matches.push(vocabWord);
+                        }
+                    });
+                    
+                    // 查找其他相同结尾的词
+                    extendedVocabulary.forEach(vocabWord => {
+                        if (vocabWord.endsWith(suffix) && 
+                            vocabWord !== word && 
+                            Math.abs(vocabWord.length - word.length) <= 4) {
+                            matches.push(vocabWord);
+                        }
+                    });
+                }
+            });
+            
+            return matches;
+        }
+        
+        // 查找词根匹配
+        function findRootMatches(word) {
+            const matches = [];
+            
+            // 提取可能的词根
+            let root = word;
+            const prefixes = ['re', 'un', 'dis', 'pre', 'over', 'under', 'out', 'mis'];
+            const suffixes = ['tion', 'sion', 'ation', 'ization', 'isation', 'ity', 'ive', 'ous', 'al', 'ic', 'ed', 'ing', 's'];
+            
+            // 去掉前缀
+            prefixes.forEach(prefix => {
+                if (root.startsWith(prefix)) {
+                    root = root.slice(prefix.length);
+                }
+            });
+            
+            // 去掉后缀
+            suffixes.forEach(suffix => {
+                if (root.endsWith(suffix)) {
+                    root = root.slice(0, -suffix.length);
+                }
+            });
+            
+            // 查找包含相同词根的词
+            if (root.length >= 3) {
+                extendedVocabulary.forEach(vocabWord => {
+                    if (vocabWord.includes(root) && vocabWord !== word) {
+                        matches.push(vocabWord);
+                    }
+                });
+            }
+            
+            return matches;
+        }
+        
+        // 查找音节结构相似的词
+        function findSyllableMatches(word) {
+            const matches = [];
+            const wordSyllables = generateSyllables(word);
+            const wordSyllableCount = wordSyllables.length;
+            
+            extendedVocabulary.forEach(vocabWord => {
+                if (vocabWord === word) return;
+                
+                const vocabSyllables = generateSyllables(vocabWord);
+                const vocabSyllableCount = vocabSyllables.length;
+                
+                // 音节数量相近
+                if (Math.abs(wordSyllableCount - vocabSyllableCount) <= 1) {
+                    // 检查音节结构相似度
+                    const syllableSimilarity = calculateSyllableSimilarity(wordSyllables, vocabSyllables);
+                    if (syllableSimilarity > 0.3) {
+                        matches.push(vocabWord);
+                    }
+                }
+            });
+            
+            return matches;
+        }
+        
+        // 计算音节相似度
+        function calculateSyllableSimilarity(syllables1, syllables2) {
+            let matchCount = 0;
+            const maxLength = Math.max(syllables1.length, syllables2.length);
+            
+            for (let i = 0; i < Math.min(syllables1.length, syllables2.length); i++) {
+                if (syllables1[i].toLowerCase() === syllables2[i].toLowerCase()) {
+                    matchCount++;
+                } else if (syllables1[i].toLowerCase().includes(syllables2[i].toLowerCase()) ||
+                          syllables2[i].toLowerCase().includes(syllables1[i].toLowerCase())) {
+                    matchCount += 0.5;
+                }
+            }
+            
+            return matchCount / maxLength;
+        }
+        
+        // 计算语音相似度
+        function calculatePhoneticSimilarity(word1, word2) {
+            // 基于多个因素计算相似度
+            let similarity = 0;
+            
+            // 1. 词长相似度
+            const lengthSimilarity = 1 - Math.abs(word1.length - word2.length) / Math.max(word1.length, word2.length);
+            similarity += lengthSimilarity * 0.2;
+            
+            // 2. 开头相似度
+            const prefixLength = Math.min(3, Math.min(word1.length, word2.length));
+            let prefixMatch = 0;
+            for (let i = 0; i < prefixLength; i++) {
+                if (word1[i].toLowerCase() === word2[i].toLowerCase()) {
+                    prefixMatch++;
+                }
+            }
+            similarity += (prefixMatch / prefixLength) * 0.3;
+            
+            // 3. 结尾相似度
+            const suffixLength = Math.min(4, Math.min(word1.length, word2.length));
+            let suffixMatch = 0;
+            for (let i = 0; i < suffixLength; i++) {
+                const pos1 = word1.length - 1 - i;
+                const pos2 = word2.length - 1 - i;
+                if (word1[pos1].toLowerCase() === word2[pos2].toLowerCase()) {
+                    suffixMatch++;
+                }
+            }
+            similarity += (suffixMatch / suffixLength) * 0.3;
+            
+            // 4. 编辑距离相似度
+            const editSimilarity = 1 - editDistance(word1, word2) / Math.max(word1.length, word2.length);
+            similarity += editSimilarity * 0.2;
+            
+            return similarity;
+        }
+
+        // 计算单词相似度 - 保留原有函数名但改进算法
+        function calculateSimilarity(word1, word2) {
+            return calculatePhoneticSimilarity(word1, word2);
+        }
+
+        // 计算编辑距离
+        function editDistance(str1, str2) {
+            const matrix = Array(str2.length + 1).fill().map(() => Array(str1.length + 1).fill(0));
+            
+            for (let i = 0; i <= str1.length; i++) matrix[0][i] = i;
+            for (let j = 0; j <= str2.length; j++) matrix[j][0] = j;
+            
+            for (let j = 1; j <= str2.length; j++) {
+                for (let i = 1; i <= str1.length; i++) {
+                    if (str1[i - 1] === str2[j - 1]) {
+                        matrix[j][i] = matrix[j - 1][i - 1];
+                    } else {
+                        matrix[j][i] = Math.min(
+                            matrix[j - 1][i - 1] + 1,
+                            matrix[j][i - 1] + 1,
+                            matrix[j - 1][i] + 1
+                        );
+                    }
+                }
+            }
+            
+            return matrix[str2.length][str1.length];
+        }
+
+        // 显示搜索结果
+        function displayResults(word, data) {
+            // 显示音标信息
+            const phoneticInfo = document.getElementById('phoneticInfo');
+            const phoneticTranscription = document.getElementById('phoneticTranscription');
+            
+            phoneticTranscription.innerHTML = `
+                <li><span class="bold">Modern IPA:</span> ${data.modern}</li>
+                <li><span class="bold">Traditional IPA:</span> ${data.traditional}</li>
+                <li><span class="bold">${data.syllables.length} syllables:</span>
+                    <div class="syllables">
+                        ${data.syllables.map(syllable => `"${syllable}"`).join(' + ')}
+                    </div>
+                </li>
+            `;
+            
+            phoneticInfo.style.display = 'block';
+
+            // 显示相似单词
+            const similarWords = document.getElementById('similarWords');
+            const wordGrid = document.getElementById('wordGrid');
+            
+            wordGrid.innerHTML = data.similar.map(similarWord => 
+                `<div class="word-item" onclick="searchExample('${similarWord}')">${similarWord}</div>`
+            ).join('');
+            
+            similarWords.style.display = 'block';
+        }
+
+        // 显示/隐藏加载状态
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+            document.getElementById('searchInput').disabled = show;
+            document.querySelector('.search-btn').disabled = show;
+        }
+
+        // 显示错误信息
+        function showError(message) {
+            const errorElement = document.getElementById('errorMessage');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+        }
+
+        // 隐藏错误信息
+        function hideError() {
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+
+        // 示例搜索
+        function searchExample(word) {
+            document.getElementById('searchInput').value = word;
+            updateUrl(word); // 同时更新URL
+            searchSimilarWords();
+        }
+
+        // 回车搜索
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchSimilarWords();
+            }
+        });
+
+        // URL参数处理
+        function getUrlParameter(name) {
+            name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+            const regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+            const results = regex.exec(location.search);
+            return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+        }
+
+        // 更新URL
+        function updateUrl(word) {
+            const newUrl = window.location.origin + window.location.pathname + '?w=' + encodeURIComponent(word);
+            window.history.pushState({word: word}, '', newUrl);
+        }
+
+        // 从URL参数自动搜索
+        function searchFromUrl() {
+            const wordFromUrl = getUrlParameter('w');
+            if (wordFromUrl) {
+                document.getElementById('searchInput').value = wordFromUrl;
+                searchSimilarWords();
+            }
+        }
+
+        // 页面加载完成后的初始化
+        window.addEventListener('load', function() {
+            // 先检查URL参数
+            searchFromUrl();
+            // 聚焦输入框
+            document.getElementById('searchInput').focus();
+        });
+
+        // 处理浏览器前进后退
+        window.addEventListener('popstate', function(event) {
+            if (event.state && event.state.word) {
+                document.getElementById('searchInput').value = event.state.word;
+                searchSimilarWords();
+            } else {
+                // 清空搜索结果
+                document.getElementById('phoneticInfo').style.display = 'none';
+                document.getElementById('similarWords').style.display = 'none';
+                document.getElementById('searchInput').value = '';
+            }
+        });
+    </script>
+</body>
+</html>
